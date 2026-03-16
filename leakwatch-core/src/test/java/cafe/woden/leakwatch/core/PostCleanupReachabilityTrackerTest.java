@@ -21,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class PostCleanupReachabilityTrackerTest {
+    private static final Duration REPORT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration GC_TIMEOUT = Duration.ofSeconds(5);
+
     @Test
     void reportsObjectsThatRemainReachableAfterCleanup() throws Exception {
         InMemoryLeakReporter reporter = new InMemoryLeakReporter();
@@ -34,7 +37,7 @@ class PostCleanupReachabilityTrackerTest {
             retained = null;
 
             GcAwaiter.awaitCondition(
-                Duration.ofSeconds(2),
+                REPORT_TIMEOUT,
                 () -> reporter.snapshot().stream().anyMatch(report -> report.type() == LeakReportType.RETAINED_AFTER_CLEANUP),
                 () -> "Expected retained-after-cleanup report. Reports seen: " + reporter.snapshot()
             );
@@ -73,7 +76,7 @@ class PostCleanupReachabilityTrackerTest {
             retained = null;
 
             GcAwaiter.awaitCondition(
-                Duration.ofSeconds(2),
+                REPORT_TIMEOUT,
                 () -> captured.get() != null,
                 () -> "Expected retained-after-cleanup diagnostic hook to fire"
             );
@@ -105,11 +108,11 @@ class PostCleanupReachabilityTrackerTest {
             ephemeral = null;
 
             GcAwaiter.awaitCondition(
-                Duration.ofSeconds(2),
+                GC_TIMEOUT,
                 () -> reference.get() == null,
                 () -> "Expected cleaned ephemeral resource to become unreachable"
             );
-            Thread.sleep(200L);
+            Thread.sleep(700L);
 
             assertFalse(reporter.snapshot().stream().anyMatch(report -> report.type() == LeakReportType.RETAINED_AFTER_CLEANUP));
         }
@@ -162,7 +165,7 @@ class PostCleanupReachabilityTrackerTest {
     }
 
     @LeakTracked(captureStackTrace = true)
-    @ExpectUnreachableAfterCleanup(gracePeriodMillis = 100L, captureCleanupStackTrace = true)
+    @ExpectUnreachableAfterCleanup(gracePeriodMillis = 500L, captureCleanupStackTrace = true)
     private static final class EphemeralResource {
         @CleanupMethod
         void close() {

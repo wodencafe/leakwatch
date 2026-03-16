@@ -78,11 +78,17 @@ public final class GcAwaiter {
         Objects.requireNonNull(failureMessageSupplier, "failureMessageSupplier");
 
         long deadline = System.nanoTime() + timeout.toNanos();
+        List<byte[]> pressure = new ArrayList<>();
+
         while (System.nanoTime() < deadline) {
             if (condition.getAsBoolean()) {
                 return;
             }
             System.gc();
+            pressure.add(new byte[128 * 1024]);
+            if (pressure.size() > 32) {
+                pressure.clear();
+            }
             Thread.sleep(100L);
         }
 

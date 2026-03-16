@@ -40,6 +40,17 @@ jobs:
       - name: Build and test
         run: ./gradlew clean test --stacktrace
 
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-jdk-${{ matrix.java }}
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+
+
   release-readiness:
     name: Release readiness
     runs-on: ubuntu-latest

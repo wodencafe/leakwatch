@@ -52,6 +52,9 @@ public final class RollingLeakReportJsonFileReporter implements LeakReporter {
                 if (parent != null) {
                     Files.createDirectories(parent);
                 }
+                if (Files.isDirectory(outputFile)) {
+                    throw new IOException("Output path is a directory: " + outputFile);
+                }
 
                 rotateIfNeeded(line);
 

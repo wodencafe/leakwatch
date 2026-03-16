@@ -244,15 +244,11 @@ If both optional modules are present, LeakWatch prefers the dedicated instrument
 
 ## Publishing
 
-LeakWatch now has a signed GitHub Packages publish path.
-
-For local rehearsal:
+For local builds:
 
 ```bash
 ./gradlew publishReleaseModulesToMavenLocal
 ```
-
-For GitHub Actions publishing, see `docs/publishing.md`. The publish workflow expects an ASCII-armored OpenPGP secret key (or signing subkey), its passphrase, and optionally a key id when you are exporting a subkey.
 
 ## Modules
 
@@ -297,7 +293,7 @@ Useful sample commands:
 
 ## More docs
 
-The repo docs are intentionally small. Start with these:
+Read here for implementation details and additional info:
 
 - `docs/golden-path.md` - the quickest end-to-end adoption path
 - `docs/configuration.md` - runtime flags, reporter wiring, and startup options
@@ -322,13 +318,8 @@ What they do:
 
 ## Limitations
 
-A few honest footnotes:
+Clarification footnotes:
 
-- cleaner timing is nondeterministic, so GC-sensitive tests have to stay tolerant
 - retention monitoring is a suspicion engine, not a proof engine
 - AspectJ weaving still has to be configured correctly by the consuming build
 - fallback cleanup is intentionally limited to detached-state safety-net work
-
-## Project status
-
-LeakWatch is still early and intentionally honest about its boundaries. The current repo is focused on getting the core lifecycle model, reporting surface, consumer packaging, and adoption story into good shape before broader release work.

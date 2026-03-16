@@ -298,7 +298,6 @@ Read here for implementation details and additional info:
 - `docs/golden-path.md` - the quickest end-to-end adoption path
 - `docs/configuration.md` - runtime flags, reporter wiring, and startup options
 - `docs/troubleshooting.md` - common setup mistakes and debugging tips
-- `docs/publishing.md` - local publishing and consumer smoke-test notes
 - `docs/release-checklist.md` - final pre-release sanity check
 
 ## Repo sanity-check commands

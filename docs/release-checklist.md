@@ -55,7 +55,7 @@ Use this before cutting any non-trivial tag or publishing artifacts outside the 
 
 - update version numbers if the release is not a snapshot
 - update `README.md` if the module list, BOM snippet, or launch guidance changed
-- update `docs/publishing.md` if the publication set, signing flow, metadata, or consumer snippets changed
+- update `README.md` or the release notes if the publication set, signing flow, metadata, or consumer snippets changed
 - give the remaining docs a quick skim so they still match the current behavior
 
 ## API and posture review

@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+**/build/
+
+# Local compile scratch
+.tmp-compile-check/
+.tmp-compile-check-next/
+
+# IDE
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+
+# Java
+*.class

@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a new LeakWatch capability, sample, doc improvement, or release-quality enhancement.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or goal
+      description: What use case are you trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Share the rough idea, expected API, or desired workflow.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any workarounds or related designs you already considered.

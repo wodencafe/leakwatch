@@ -5,5 +5,5 @@ plugins {
 
 dependencies {
     api(project(":leakwatch-core"))
-    api("org.aspectj:aspectjrt:1.9.25")
+    api("org.aspectj:aspectjrt:1.9.25.1")
 }

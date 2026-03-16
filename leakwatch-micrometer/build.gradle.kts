@@ -4,5 +4,5 @@ plugins {
 
 dependencies {
     api(project(":leakwatch-core"))
-    api("io.micrometer:micrometer-core:1.13.0")
+    api("io.micrometer:micrometer-core:1.16.4")
 }

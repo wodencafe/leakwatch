@@ -135,6 +135,10 @@ fun Project.configurePublicationSigning() {
     }
 }
 
+
+fun Project.isSamplesProject(): Boolean =
+    path == ":samples" || path.startsWith(":samples:")
+
 allprojects {
     group = "cafe.woden"
     version = resolvedProjectVersion
@@ -145,7 +149,7 @@ allprojects {
 }
 
 subprojects {
-    val isSampleProject = path.startsWith(":samples:")
+    val isSampleProject = isSamplesProject()
     val isBomProject = name == "leakwatch-bom"
     val isPublishedModule = !isSampleProject
 
@@ -234,7 +238,7 @@ tasks.register("publishReleaseModulesToMavenLocal") {
 
     dependsOn(
         subprojects
-            .filter { !it.path.startsWith(":samples:") }
+            .filter { !it.isSamplesProject() }
             .map { "${it.path}:publishToMavenLocal" }
     )
 }
@@ -245,7 +249,7 @@ tasks.register("publishReleaseModulesToGitHubPackages") {
 
     dependsOn(
         subprojects
-            .filter { !it.path.startsWith(":samples:") }
+            .filter { !it.isSamplesProject() }
             .map { "${it.path}:publishAllPublicationsToGitHubPackagesRepository" }
     )
 }
@@ -257,7 +261,7 @@ fun publishedJar(project: Project, classifier: String): File =
     project.layout.buildDirectory.file("libs/${project.name}-${project.version}-${classifier}.jar").get().asFile
 
 val publishedProjectsProvider = provider {
-    subprojects.filter { !it.path.startsWith(":samples:") }
+    subprojects.filter { !it.isSamplesProject() }
 }
 
 val consumerSmokeTest = tasks.register<GradleBuild>("consumerSmokeTest") {
@@ -348,7 +352,7 @@ tasks.register("printPublishedCoordinates") {
 
     doLast {
         subprojects
-            .filter { !it.path.startsWith(":samples:") }
+            .filter { !it.isSamplesProject() }
             .sortedBy { it.name }
             .forEach { println("${it.group}:${it.name}:${it.version}") }
     }

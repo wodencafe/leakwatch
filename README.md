@@ -37,20 +37,29 @@ Use the annotations for their various purposes:
 
 ## Quick start
 
-### 1) Add the dependency
+### 1) Add the dependency and enable weaving
 
-The easiest path is to import the BOM and use the AspectJ module.
+LeakWatch uses AspectJ, so consumers need to enable AspectJ weaving in their build. For Gradle, the simplest setup is post-compile weaving with the FreeFair plugin.
 
 ```kotlin
+plugins {
+    java
+    id("io.freefair.aspectj.post-compile-weaving") version "9.2.0"
+}
+
 dependencies {
     implementation(platform("cafe.woden:leakwatch-bom:0.1.0"))
 
     implementation("cafe.woden:leakwatch-aspectj")
     aspect("cafe.woden:leakwatch-aspectj:0.1.0")
+
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
 }
 ```
 
 Why the explicit version on `aspect(...)`? The dedicated AspectJ plugin configuration may not inherit the BOM constraint the same way normal `implementation` does, so the safe consumer setup is to version that line directly.
+
+Without the weaving plugin and the `aspect(...)` dependency, the annotations are present, but the AspectJ advice is not applied.
 
 ### 2) Annotate the lifecycle type
 
@@ -180,6 +189,30 @@ Bad fits:
 
 Use this for types with no explicit cleanup contract when you still want a practical “this seems to be piling up” signal.
 
+```java
+import cafe.woden.leakwatch.annotations.RetentionSuspect;
+import cafe.woden.leakwatch.annotations.Severity;
+
+@RetentionSuspect(
+    maxLiveInstances = 5_000,
+    maxApproxShallowBytes = 8 * 1024 * 1024,
+    captureStackTrace = true,
+    severity = Severity.WARN,
+    tags = {"cache", "parsed-payload"}
+)
+final class ParsedPayload {
+    private final byte[] raw;
+    private final String source;
+
+    ParsedPayload(byte[] raw, String source) {
+        this.raw = raw;
+        this.source = source;
+    }
+}
+```
+
+That kind of setup is useful for objects that are expected to come and go naturally, but would be suspicious if they start accumulating in large numbers or chewing through shallow memory.
+
 Key attributes:
 
 - `maxLiveInstances` - live-count threshold
@@ -228,6 +261,110 @@ or:
 ```bash
 LEAKWATCH_ENABLED=false java -jar app.jar
 ```
+
+
+## Using JFR
+
+LeakWatch JFR support is optional. In practice, using it means four things:
+
+1. add `leakwatch-jfr` to the application
+2. configure a `JfrLeakReporter`
+3. run the application with an active JFR recording
+4. enable the LeakWatch event types you care about
+
+### Add the JFR module
+
+```kotlin
+dependencies {
+    implementation(platform("cafe.woden:leakwatch-bom:0.1.0"))
+
+    implementation("cafe.woden:leakwatch-aspectj")
+    implementation("cafe.woden:leakwatch-jfr")
+    aspect("cafe.woden:leakwatch-aspectj:0.1.0")
+
+    runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+}
+```
+
+### Programmatic setup
+
+If you want logs and JFR together, wire both reporters:
+
+```java
+import cafe.woden.leakwatch.core.CompositeLeakReporter;
+import cafe.woden.leakwatch.core.LeakWatchConfig;
+import cafe.woden.leakwatch.core.LeakWatchRuntime;
+import cafe.woden.leakwatch.core.Slf4jLeakReporter;
+import cafe.woden.leakwatch.jfr.JfrLeakReporter;
+
+LeakWatchRuntime.configure(
+    LeakWatchConfig.defaults(),
+    new CompositeLeakReporter(
+        new Slf4jLeakReporter(),
+        new JfrLeakReporter()
+    )
+);
+```
+
+Then start a JFR recording and enable the LeakWatch events you want to capture:
+
+```java
+import jdk.jfr.Recording;
+
+try (Recording recording = new Recording()) {
+    recording.enable("cafe.woden.leakwatch.LeakGcWithoutCleanup");
+    recording.enable("cafe.woden.leakwatch.RetainedAfterCleanup");
+    recording.enable("cafe.woden.leakwatch.RetentionCountExceeded");
+    recording.enable("cafe.woden.leakwatch.RetentionApproxBytesExceeded");
+    recording.enable("cafe.woden.leakwatch.FallbackCleanupExecuted");
+    recording.enable("cafe.woden.leakwatch.FallbackCleanupFailed");
+    recording.enable("cafe.woden.leakwatch.StrictModeWarning");
+
+    recording.start();
+
+    // run the workload that may produce LeakWatch reports
+
+    recording.stop();
+    recording.dump(Path.of("build/leakwatch/leakwatch.jfr"));
+}
+```
+
+### Property-based setup
+
+If you want the application to pick up JFR from startup flags instead of hardcoding a reporter, use the property/env-driven runtime path:
+
+```java
+LeakWatchRuntime.configureFromSystemPropertiesAndEnvironment();
+```
+
+and launch with something like:
+
+```bash
+java \
+  -Dleakwatch.reporters=slf4j,jfr \
+  -jar app.jar
+```
+
+### Starting the recording
+
+The embedded `Recording` example above is the easiest way to understand the flow, but it is not the only option. The JDK can also start JFR recordings:
+- at JVM startup with `-XX:StartFlightRecording=...`
+- on a running process with `jcmd <pid> JFR.start filename=/path/to/dump.jfr`
+  
+### What to open afterward
+
+The result is a normal `.jfr` recording file. You can inspect it with the `jfr` tool or open it in JDK Mission Control.
+
+### In-repo examples
+
+If you want working examples from this repo, start with:
+
+```bash
+./gradlew :samples:sample-jfr:run
+./gradlew :samples:sample-property-configured-jfr:run
+```
+
+The direct JFR sample uses `JfrLeakReporter` plus a local `Recording`, and the property-configured sample uses `LeakWatchRuntime.configureFromSystemPropertiesAndEnvironment()` with JFR enabled from configuration.
 
 ## Optional shallow-size backends
 
@@ -321,4 +458,4 @@ What they do:
 Clarification footnotes:
 
 - Retention monitoring is a suspicion engine, not proof of a memory leak.
-- AspectJ weaving still has to be configured correctly by the consuming build
+- LeakWatch uses AspectJ, so consumers must enable AspectJ weaving in their build. For Gradle, the simplest setup is the `io.freefair.aspectj.post-compile-weaving` plugin plus `implementation("cafe.woden:leakwatch-aspectj")` and `aspect("cafe.woden:leakwatch-aspectj:<version>")`.

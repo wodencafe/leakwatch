@@ -2,7 +2,7 @@
 
 LeakWatch is a runtime lifecycle leak detector for Java applications.
 
-It is built for the kinds of objects that have a real end-of-life contract: things that are supposed to be closed, disposed, shut down, disconnected, or unsubscribed. LeakWatch is not trying to replace a heap dump or profiler. It is trying to catch the boring, expensive bugs that happen when lifecycle cleanup is forgotten or when cleaned-up objects stay pinned longer than they should.
+It is built for the kinds of objects that have a real end-of-life contract: things that are supposed to be closed, disposed, shut down, disconnected, or unsubscribed. LeakWatch is not trying to replace a heap dump or profiler. It is trying to catch the boring, expensive bugs can that happen when lifecycle cleanup is forgotten or when cleaned-up objects stay pinned longer than they should.
 
 ## What LeakWatch is good at
 
@@ -20,19 +20,20 @@ LeakWatch is not:
 - a universal heap leak detector
 - proof that a still-reachable object is definitely a bug
 - a replacement for JFR, heap dumps, profilers, or memory analysis tools
-- a mechanism for calling instance cleanup methods on dead objects during GC
+- a mechanism for calling instance cleanup methods on dead objects during GC (See `@FallbackCleanup`)
 
 ## The basic idea
 
-You annotate the types you care about. LeakWatch tracks object construction and cleanup boundaries, then reports problems when lifecycle expectations are violated.
+You annotate the types you care about, objects that need to be closed, or otherwise that you suspect might not be getting cleaned up.
+LeakWatch tracks object construction and cleanup boundaries, then reports problems when lifecycle expectations are violated.
 
-Use the annotations like this:
+Use the annotations for their various purposes:
 
-- `@LeakTracked` - this type has a cleanup boundary that should be observed
-- `@CleanupMethod` - this is the method that counts as cleanup when the name is not conventional or you want the contract to stay explicit
-- `@ExpectUnreachableAfterCleanup` - after cleanup, this object should become unreachable reasonably soon
-- `@FallbackCleanup` - if cleanup was missed, LeakWatch may run a detached, best-effort fallback action
-- `@RetentionSuspect` - this type has no explicit cleanup contract, but suspicious accumulation is still worth flagging
+- `@LeakTracked` - This type has a cleanup boundary that should be observed.  Catch entities that don't get explicitly cleaned up prior to garbage collection.
+- `@CleanupMethod` - This is the method that counts as cleanup when the name is not conventional or you want the contract to stay explicit.
+- `@ExpectUnreachableAfterCleanup` - After the cleanup method is called, catch entities that don't get garbage collected after a grace period.
+- `@FallbackCleanup` - If a cleanup call was missed, LeakWatch may run a detached, best-effort fallback action.
+- `@RetentionSuspect` - This type has no explicit cleanup contract, but suspicious accumulation is still worth flagging (count or memory usage boundary).
 
 ## Quick start
 
@@ -42,10 +43,10 @@ The easiest path is to import the BOM and use the AspectJ module.
 
 ```kotlin
 dependencies {
-    implementation(platform("cafe.woden:leakwatch-bom:0.1.0-SNAPSHOT"))
+    implementation(platform("cafe.woden:leakwatch-bom:0.1.0"))
 
     implementation("cafe.woden:leakwatch-aspectj")
-    aspect("cafe.woden:leakwatch-aspectj:0.1.0-SNAPSHOT")
+    aspect("cafe.woden:leakwatch-aspectj:0.1.0")
 }
 ```
 
@@ -141,7 +142,7 @@ Good fits:
 
 ### `@ExpectUnreachableAfterCleanup`
 
-Use this when cleanup is not the full story. Some objects should not only be cleaned up, they should also disappear soon after.
+Use this when you want to catch entities that don't get garbage collected after explicit cleanup is called. 
 
 This is useful for catching zombie objects that stay pinned by:
 
@@ -319,6 +320,5 @@ What they do:
 
 Clarification footnotes:
 
-- retention monitoring is a suspicion engine, not a proof engine
+- Retention monitoring is a suspicion engine, not proof of a memory leak.
 - AspectJ weaving still has to be configured correctly by the consuming build
-- fallback cleanup is intentionally limited to detached-state safety-net work

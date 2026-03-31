@@ -15,7 +15,7 @@ dependencies {
         api(project(":leakwatch-micrometer"))
 
         api("org.slf4j:slf4j-api:2.0.17")
-        api("org.aspectj:aspectjrt:1.9.25")
+        api("org.aspectj:aspectjrt:1.9.25.1")
         api("org.openjdk.jol:jol-core:0.17")
         api("io.micrometer:micrometer-core:1.13.0")
     }

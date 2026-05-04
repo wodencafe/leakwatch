@@ -12,7 +12,7 @@ import java.io.File
 plugins {
     base
     `maven-publish`
-    id("io.freefair.aspectj") version "9.2.0" apply false
+    id("io.freefair.aspectj") version "9.5.0" apply false
     id("io.freefair.aspectj.post-compile-weaving") version "9.2.0" apply false
 }
 
